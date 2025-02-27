@@ -24,6 +24,12 @@ class DosenPengujiController extends ResourceController
     public function create()
     {
         $data = $this->request->getJSON(true);
+
+        $allowedPeran = ['PENGUJI 1', 'PENGUJI 2'];
+        if (!in_array($data['peran'], $allowedPeran)) {
+        return $this->failValidationErrors('Peran tidak valid. Pilih: ' . implode(', ', $allowedPeran));
+        }
+
         if ($this->model->insert($data)) {
             return $this->respondCreated(['message' => 'Data Dosen Penguji berhasil ditambahkan']);
         }
@@ -33,6 +39,12 @@ class DosenPengujiController extends ResourceController
     public function update($id = null)
     {
         $data = $this->request->getJSON(true);
+
+        $allowedPeran = ['PENGUJI 1', 'PENGUJI 2'];
+        if (!in_array($data['peran'], $allowedPeran)) {
+        return $this->failValidationErrors('Peran tidak valid. Pilih: ' . implode(', ', $allowedPeran));
+        }
+
         if ($this->model->update($id, $data)) {
             return $this->respond(['message' => 'Data Dosen Penguji berhasil diubah']);
         }

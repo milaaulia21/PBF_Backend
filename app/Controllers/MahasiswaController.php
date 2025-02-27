@@ -24,6 +24,12 @@ class MahasiswaController extends ResourceController
     public function create()
     {
         $data = $this->request->getJSON(true);
+
+        $allowedProdi = ['D3 TI', 'D4 RKS', 'D4 ALKS', 'D4 TRM', 'D4 RPL'];
+            if (!in_array($data['prodi_mhs'], $allowedProdi)) {
+            return $this->failValidationErrors('Prodi tidak valid. Pilih: ' . implode(', ', $allowedProdi));
+        }
+
         if ($this->model->insert($data)) {
             return $this->respondCreated(['message' => 'Data Mahasiswa berhasil ditambahkan']);
         }
@@ -33,6 +39,12 @@ class MahasiswaController extends ResourceController
     public function update($id = null)
     {
         $data = $this->request->getJSON(true);
+
+        $allowedProdi = ['D3 TI', 'D4 RKS', 'D4 ALKS', 'D4 TRM', 'D4 RPL'];
+        if (!in_array($data['prodi_mhs'], $allowedProdi)) {
+        return $this->failValidationErrors('Prodi tidak valid. Pilih: ' . implode(', ', $allowedProdi));
+        }
+
         if ($this->model->update($id, $data)) {
             return $this->respond(['message' => 'Data Mahasiswa berhasil diubah']);
         }

@@ -24,6 +24,12 @@ class SidangController extends ResourceController
     public function create()
     {
         $data = $this->request->getJSON(true);
+
+        $allowedStatus = ['DITUNDA', 'DIJADWALKAN', 'DIBATALKAN'];
+        if (!in_array($data['status'], $allowedStatus)) {
+        return $this->failValidationErrors('Status tidak valid. Pilih: ' . implode(', ', $allowedStatus));
+        }
+
         if ($this->model->insert($data)) {
             return $this->respondCreated(['message' => 'Data Sidang berhasil ditambahkan']);
         }
@@ -33,6 +39,12 @@ class SidangController extends ResourceController
     public function update($id = null)
     {
         $data = $this->request->getJSON(true);
+
+        $allowedStatus = ['DITUNDA', 'DIJADWALKAN', 'DIBATALKAN'];
+        if (!in_array($data['status'], $allowedStatus)) {
+        return $this->failValidationErrors('Status tidak valid. Pilih: ' . implode(', ', $allowedStatus));
+        }
+
         if ($this->model->update($id, $data)) {
             return $this->respond(['message' => 'Data Sidang berhasil diubah']);
         }
