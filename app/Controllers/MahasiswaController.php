@@ -2,7 +2,6 @@
 
 namespace App\Controllers;
 
-use App\Models\MahasiswaModel;
 use CodeIgniter\RESTful\ResourceController;
 
 class MahasiswaController extends ResourceController

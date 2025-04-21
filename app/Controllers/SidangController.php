@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\SidangModel;
 use CodeIgniter\RESTful\ResourceController;
+use App\Services\SidangService;
 
 class SidangController extends ResourceController
 {
@@ -23,18 +24,16 @@ class SidangController extends ResourceController
 
     public function create()
     {
-        $data = $this->request->getJSON(true);
-
-        $allowedStatus = ['DITUNDA', 'DIJADWALKAN', 'DIBATALKAN'];
-        if (!in_array($data['status'], $allowedStatus)) {
-        return $this->failValidationErrors('Status tidak valid. Pilih: ' . implode(', ', $allowedStatus));
+        try {
+            $data = $this->request->getJSON(true);
+            $service = new SidangService();
+            $result = $service->scheduleSidang($data['id_mhs']);
+            return $this->respondCreated($result);
+        } catch (\Exception $e) {
+            return $this->fail($e->getMessage());
         }
-
-        if ($this->model->insert($data)) {
-            return $this->respondCreated(['message' => 'Data Sidang berhasil ditambahkan']);
-        }
-        return $this->fail($this->model->errors());
     }
+    
 
     public function update($id = null)
     {

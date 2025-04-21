@@ -6,8 +6,12 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 $routes->get('/', 'Home::index');
-$routes->post('login', 'AuthController::login');
-$routes->get('profile', 'AuthController::profile');
+
+$routes->group('auth', function($routes){
+    $routes->post('login', 'AuthController::login');
+    $routes->get('profile', 'AuthController::profile');
+    $routes->post('register', 'AuthController::register');
+});
 
 $routes->group('dosen', function($routes) {
     $routes->get('/', 'DosenController::index');          
