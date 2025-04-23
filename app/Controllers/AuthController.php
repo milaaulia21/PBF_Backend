@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Models\UserModel;
+use App\Models\MahasiswaModel;
+use App\Models\DosenModel;
 use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
 use Exception;
@@ -13,12 +15,12 @@ class AuthController extends ResourceController
     {
         helper('jwt_helper');
     }
+
     public function login()
     {
         $json = $this->request->getJSON();
         $username = $json->username ?? null;
         $password = $json->password ?? null;
-
 
         $userModel = new UserModel();
         $user = $userModel->getUserByUserName($username);
@@ -68,8 +70,8 @@ class AuthController extends ResourceController
         $password = $json->password ?? null;
         $role = $json->role ?? null;
 
-        if (!$username || !$password) {
-            return $this->failValidationErrors("Username dan Password wajib diisi.");
+        if (!$username || !$password || !$role) {
+            return $this->failValidationErrors("Username, Password, dan Role wajib diisi.");
         }
 
         $userModel = new UserModel();
@@ -82,17 +84,39 @@ class AuthController extends ResourceController
         // Hash password sebelum disimpan
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        // Simpan ke database
+        // Simpan user
         $userModel->insert([
             'username' => $username,
             'password' => $hashedPassword,
             'role' => $role
         ]);
 
+        $id_user = $userModel->insertID(); // ambil id_user terakhir
+
+        // Simpan ke tabel mahasiswa / dosen sesuai role
+        if ($role === 'mahasiswa') {
+            $mhsModel = new MahasiswaModel();
+            $mhsModel->insert([
+                'nama_mhs' => '',
+                'nim' => 0,
+                'prodi_mhs' => 'D4 RPL', // default
+                'thn_akademik' => '',
+                'judul_skripsi' => '',
+                'id_user' => $id_user
+            ]);
+        } elseif ($role === 'dosen') {
+            $dosenModel = new DosenModel();
+            $dosenModel->insert([
+                'nama_dosen' => '',
+                'nip' => 0,
+                'id_user' => $id_user
+            ]);
+        }
+
         return $this->respondCreated([
             'message' => 'Registrasi berhasil',
-            'username' => $username
+            'username' => $username,
+            'role' => $role
         ]);
     }
-
 }

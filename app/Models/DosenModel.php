@@ -8,5 +8,5 @@ class DosenModel extends Model
 {
     protected $table = 'dosen';
     protected $primaryKey = 'id_dosen';
-    protected $allowedFields = ['nama_dosen', 'nip'];
+    protected $allowedFields = ['nama_dosen', 'nip', 'id_user'];
 }
