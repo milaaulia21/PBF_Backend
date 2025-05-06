@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\UserModel;
 use CodeIgniter\RESTful\ResourceController;
 
 class MahasiswaController extends ResourceController
@@ -25,8 +26,29 @@ class MahasiswaController extends ResourceController
         $data = $this->request->getJSON(true);
 
         $allowedProdi = ['D3 TI', 'D4 RKS', 'D4 ALKS', 'D4 TRM', 'D4 RPL'];
-            if (!in_array($data['prodi_mhs'], $allowedProdi)) {
+        if (!in_array($data['prodi_mhs'], $allowedProdi)) {
             return $this->failValidationErrors('Prodi tidak valid. Pilih: ' . implode(', ', $allowedProdi));
+        }
+
+        if (empty($data['id_user']) || empty($data['nim'])) {
+            return $this->failValidationErrors('id_user dan nim wajib diisi.');
+        }
+
+        if (empty($data['nama_mhs'])) {
+            return $this->failValidationErrors('Nama mahasiswa wajib diisi.');
+        }
+        
+        if (empty($data['thn_akademik'])) {
+            return $this->failValidationErrors('Tahun akademik wajib diisi.');
+        }
+        
+        if (empty($data['judul_skripsi'])) {
+            return $this->failValidationErrors('Judul skripsi wajib diisi.');
+        }
+        
+        $userModel = new UserModel();
+        if (!$userModel->find($data['id_user'])) {
+            return $this->failValidationErrors('id_user tidak ditemukan.');
         }
 
         if ($this->model->insert($data)) {
@@ -35,13 +57,14 @@ class MahasiswaController extends ResourceController
         return $this->fail($this->model->errors());
     }
 
+
     public function update($id = null)
     {
         $data = $this->request->getJSON(true);
 
         $allowedProdi = ['D3 TI', 'D4 RKS', 'D4 ALKS', 'D4 TRM', 'D4 RPL'];
         if (!in_array($data['prodi_mhs'], $allowedProdi)) {
-        return $this->failValidationErrors('Prodi tidak valid. Pilih: ' . implode(', ', $allowedProdi));
+            return $this->failValidationErrors('Prodi tidak valid. Pilih: ' . implode(', ', $allowedProdi));
         }
 
         if ($this->model->update($id, $data)) {

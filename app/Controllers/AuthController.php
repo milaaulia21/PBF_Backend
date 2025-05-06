@@ -5,7 +5,6 @@ namespace App\Controllers;
 use App\Models\UserModel;
 use App\Models\MahasiswaModel;
 use App\Models\DosenModel;
-use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
 use Exception;
 
@@ -34,14 +33,36 @@ class AuthController extends ResourceController
         }
 
         $token = generateJWT([
-            'id' => $user['id_user'],
+            'id_user' => $user['id_user'],
             'username' => $user['username'],
             'role' => $user['role']
         ]);
 
+        $redirect = false;
+        $target = null;
+
+        if ($user['role'] === 'mahasiswa') {
+            $mhs = model('MahasiswaModel')->where('id_user', $user['id_user'])->first();
+            if ($mhs && $mhs['nim'] != null && $mhs['judul_skripsi'] !== '') {
+                $redirect = false;
+                $target = null;
+            } else {
+                $redirect = true;
+                $target = 'mahasiswa';
+            }
+        } elseif ($user['role'] === 'dosen') {
+            $dosen = model('DosenModel')->where('id_user', $user['id_user'])->first();
+            if (!$dosen || !$dosen['nip']) {
+                $redirect = true;
+                $target = 'dosen';
+            }
+        }
+
         return $this->respond([
             'message' => 'Login Berhasil',
-            'token' => $token
+            'token' => $token,
+            'redirect' => $redirect,
+            'target' => $target,
         ], 200);
     }
 
@@ -57,7 +78,38 @@ class AuthController extends ResourceController
 
         try {
             $decoded = validateJWT($token);
-            return $this->response->setJSON(['message' => 'Token valid', 'user' => $decoded]);
+
+            $role = $decoded->data->role ?? null;
+            $id_user = $decoded->data->id_user ?? null;
+
+            if (!$role || !$id_user) {
+                return $this->response->setJSON(['error' => 'Invalid token payload']);
+            }
+
+            $db = \Config\Database::connect();
+
+            if ($role === 'mahasiswa') {
+                $builder = $db->table('mahasiswa');
+                $builder->where('id_user', $id_user);
+                $userData = $builder->get()->getRowArray();
+            } elseif ($role === 'dosen') {
+                $builder = $db->table('dosen');
+                $builder->where('id_user', $id_user);
+                $userData = $builder->get()->getRowArray();
+            } else {
+                $builder = $db->table('user');
+                $builder->where('id_user', $id_user);
+                $userData = $builder->get()->getRowArray();
+            }
+
+            if (!$userData) {
+                return $this->response->setJSON(['error' => 'User not found']);
+            }
+
+            return $this->response->setJSON([
+                'message' => 'Token valid',
+                'user' => $userData
+            ]);
         } catch (Exception $e) {
             return $this->response->setJSON(['error' => $e->getMessage()]);
         }
@@ -76,47 +128,18 @@ class AuthController extends ResourceController
 
         $userModel = new UserModel();
 
-        // Cek apakah username sudah ada
         if ($userModel->where('username', $username)->first()) {
             return $this->fail("Username sudah digunakan.");
         }
 
-        // Hash password sebelum disimpan
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        // Simpan user
         $userModel->insert([
             'username' => $username,
             'password' => $hashedPassword,
             'role' => $role
         ]);
 
-        $id_user = $userModel->insertID(); // ambil id_user terakhir
-
-        // Simpan ke tabel mahasiswa / dosen sesuai role
-        if ($role === 'mahasiswa') {
-            $mhsModel = new MahasiswaModel();
-            $mhsModel->insert([
-                'nama_mhs' => '',
-                'nim' => 0,
-                'prodi_mhs' => 'D4 RPL', // default
-                'thn_akademik' => '',
-                'judul_skripsi' => '',
-                'id_user' => $id_user
-            ]);
-        } elseif ($role === 'dosen') {
-            $dosenModel = new DosenModel();
-            $dosenModel->insert([
-                'nama_dosen' => '',
-                'nip' => 0,
-                'id_user' => $id_user
-            ]);
-        }
-
-        return $this->respondCreated([
-            'message' => 'Registrasi berhasil',
-            'username' => $username,
-            'role' => $role
-        ]);
+        return $this->respondCreated(['message' => 'User berhasil didaftarkan']);
     }
 }
