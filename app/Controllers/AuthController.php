@@ -61,6 +61,7 @@ class AuthController extends ResourceController
         return $this->respond([
             'message' => 'Login Berhasil',
             'token' => $token,
+            'role' => $user['role'],  
             'redirect' => $redirect,
             'target' => $target,
         ], 200);
