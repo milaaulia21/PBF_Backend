@@ -122,12 +122,12 @@ class SidangService
         $this->examinerModel->insert([
             'id_sidang' => $newSidangId,
             'id_dosen' => $examiner1,
-            'peran' => 'Examiner 1'
+            'peran' => 'PENGUJI 1'
         ]);
         $this->examinerModel->insert([
             'id_sidang' => $newSidangId,
             'id_dosen' => $examiner2,
-            'peran' => 'Examiner 2'
+            'peran' => 'PENGUJI 2'
         ]);
 
         return [

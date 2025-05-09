@@ -30,6 +30,7 @@ $routes->group('mahasiswa', function($routes) {
 
 $routes->group('sidang', function($routes) {
     $routes->get('/', 'SidangController::index');          
+    $routes->put('update-status/(:num)', 'SidangController::updateStatus/$1');
     $routes->get('(:num)', 'SidangController::show/$1');   
     $routes->post('/', 'SidangController::create');        
     $routes->put('(:num)', 'SidangController::update/$1');

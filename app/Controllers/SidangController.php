@@ -35,6 +35,34 @@ class SidangController extends ResourceController
     }
     
 
+    public function updateStatus($id = null)
+{
+    try {
+        $data = $this->request->getJSON(true);
+
+        if (!isset($data['status'])) {
+            return $this->failValidationErrors('Field status wajib diisi');
+        }
+
+        $allowedStatus = ['DITUNDA', 'DIJADWALKAN', 'DIBATALKAN'];
+        if (!in_array($data['status'], $allowedStatus)) {
+            return $this->failValidationErrors('Status tidak valid. Pilih: ' . implode(', ', $allowedStatus));
+        }
+
+        $sidang = $this->model->find($id);
+        if (!$sidang) {
+            return $this->failNotFound('Data Sidang tidak ditemukan');
+        }
+
+        $this->model->update($id, ['status' => $data['status']]);
+
+        return $this->respond(['message' => 'Status Sidang berhasil diperbarui']);
+    } catch (\Exception $e) {
+        return $this->fail($e->getMessage());
+    }
+}
+
+
     public function update($id = null)
     {
         $data = $this->request->getJSON(true);
