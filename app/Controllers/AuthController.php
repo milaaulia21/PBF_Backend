@@ -91,17 +91,20 @@ class AuthController extends ResourceController
 
             if ($role === 'mahasiswa') {
                 $builder = $db->table('mahasiswa');
-                $builder->where('id_user', $id_user);
-                $userData = $builder->get()->getRowArray();
+                $builder->select('mahasiswa.*, user.role, user.isAdmin');
+                $builder->join('user', 'user.id_user = mahasiswa.id_user');
             } elseif ($role === 'dosen') {
                 $builder = $db->table('dosen');
-                $builder->where('id_user', $id_user);
-                $userData = $builder->get()->getRowArray();
+                $builder->select('dosen.*, user.role, user.isAdmin');
+                $builder->join('user', 'user.id_user = dosen.id_user');
             } else {
                 $builder = $db->table('user');
                 $builder->where('id_user', $id_user);
                 $userData = $builder->get()->getRowArray();
             }
+
+            $builder->where('user.id_user', $id_user);
+            $userData = $builder->get()->getRowArray();
 
             if (!$userData) {
                 return $this->response->setJSON(['error' => 'User not found']);
