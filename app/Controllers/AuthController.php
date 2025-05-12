@@ -3,8 +3,6 @@
 namespace App\Controllers;
 
 use App\Models\UserModel;
-use App\Models\MahasiswaModel;
-use App\Models\DosenModel;
 use CodeIgniter\RESTful\ResourceController;
 use Exception;
 

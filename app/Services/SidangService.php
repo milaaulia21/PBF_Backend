@@ -25,6 +25,15 @@ class SidangService
 
     public function scheduleSidang(int $studentId): array
     {
+        $existing = $this->sidangModel
+            ->where('id_mhs', $studentId)
+            ->whereIn('status', ['DIJADWALKAN']) 
+            ->countAllResults();
+
+        if ($existing > 0) {
+            throw new Exception('Anda Sudah Terdaftar');
+        }
+
         $lecturers = $this->dosenModel->findAll();
         $lecturerLoad = [];
 
@@ -62,7 +71,6 @@ class SidangService
             ];
         }
 
-        // Urutkan ruangan berdasarkan jumlah penggunaan (prioritaskan yang paling sedikit dipakai)
         usort($roomUsage, fn($a, $b) => $a['count'] <=> $b['count']);
 
 
@@ -148,7 +156,7 @@ class SidangService
         ]);
 
         return [
-            'message' => 'Defense scheduled successfully.',
+            'message' => 'Data Persidangan Berhasil Ditambahkan.',
             'id_sidang' => $newSidangId,
             'date' => $selectedDate,
             'time' => $startTime . ' - ' . $endTime,
