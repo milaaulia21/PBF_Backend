@@ -49,6 +49,23 @@ class SidangService
         $endDate = strtotime('+2 months', $startDate);
         $rooms = $this->roomModel->findAll();
 
+        $roomUsage = [];
+
+        foreach ($rooms as $room) {
+            $count = $this->sidangModel
+                ->where('id_ruangan', $room['id_ruangan'])
+                ->countAllResults();
+            $roomUsage[] = [
+                'id_ruangan' => $room['id_ruangan'],
+                'nama_ruangan' => $room['nama_ruangan'] ?? '', // Optional
+                'count' => $count
+            ];
+        }
+
+        // Urutkan ruangan berdasarkan jumlah penggunaan (prioritaskan yang paling sedikit dipakai)
+        usort($roomUsage, fn($a, $b) => $a['count'] <=> $b['count']);
+
+
         $selectedDate = null;
         $startTime = null;
         $endTime = null;
@@ -64,7 +81,7 @@ class SidangService
             }
 
             for ($hour = 8; $hour < 16; $hour++) {
-                foreach ($rooms as $room) {
+                foreach ($roomUsage as $room) {
                     $date = date('Y-m-d', $startDate);
                     $start = sprintf('%02d:00:00', $hour);
                     $end = sprintf('%02d:00:00', $hour + 1);
@@ -73,8 +90,8 @@ class SidangService
                         ->where('tanggal_sidang', $date)
                         ->where('id_ruangan', $room['id_ruangan'])
                         ->groupStart()
-                            ->where('waktu_mulai', $start)
-                            ->orWhere('waktu_selesai', $start)
+                        ->where('waktu_mulai', $start)
+                        ->orWhere('waktu_selesai', $start)
                         ->groupEnd()
                         ->countAllResults();
 
@@ -83,8 +100,8 @@ class SidangService
                         ->join('sidang', 'sidang.id_sidang = dosen_penguji.id_sidang')
                         ->where('tanggal_sidang', $date)
                         ->groupStart()
-                            ->where('waktu_mulai', $start)
-                            ->orWhere('waktu_selesai', $start)
+                        ->where('waktu_mulai', $start)
+                        ->orWhere('waktu_selesai', $start)
                         ->groupEnd()
                         ->countAllResults();
 
