@@ -52,3 +52,10 @@ $routes->group('ruangan', function($routes) {
     $routes->put('(:num)', 'RuanganController::update/$1'); 
     $routes->delete('(:num)', 'RuanganController::delete/$1'); 
 });
+
+$routes->group('users', function ($routes) {
+    $routes->get('/', 'UserController::index');
+    $routes->get('(:num)', 'UserController::show/$1');
+    $routes->delete('(:num)', 'UserController::delete/$1');
+    $routes->put('(:num)/isAdmin', 'UserController::updateIsAdmin/$1');
+});
