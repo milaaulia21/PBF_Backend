@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\SidangModel;
 use App\Models\DosenModel;
+use App\Models\MahasiswaModel;
 use App\Models\DosenPengujiModel;
 use App\Models\RuanganModel;
 use App\Services\PusherService;
@@ -156,6 +157,53 @@ class SidangService
             'peran' => 'PENGUJI 2'
         ]);
 
+        // Get room name for notification
+        $roomName = '';
+        foreach ($roomUsage as $r) {
+            if ($r['id_ruangan'] == $selectedRoomId) {
+                $roomName = $r['nama_ruangan'];
+                break;
+            }
+        }
+
+        // Send notifications BEFORE returning
+        $mahasiswaModel = new MahasiswaModel();
+        $dosenModel = new DosenModel();
+        
+        $mahasiswa = $mahasiswaModel->find($studentId);
+        $dosen1 = $dosenModel->find($examiner1);
+        $dosen2 = $dosenModel->find($examiner2);
+        $nama = $mahasiswa['nama_mhs'];
+        
+        $pusherService = new PusherService();
+        $message = "Sidang mahasiswa dengan nama {$nama} telah dijadwalkan pada {$selectedDate} pukul {$startTime} - {$endTime} di ruang {$roomName}.";
+
+        // Send notification to lecturers
+        $pusherService->sendNotification('dosen_' . $dosen1['id_user'], 'new_sidang', ['message' => $message]);
+        $pusherService->sendNotification('dosen_' . $dosen2['id_user'], 'new_sidang', ['message' => $message]);
+
+        // Send notification to student
+        $pusherService->sendNotification('mahasiswa_' . $mahasiswa['id_user'], 'new_sidang', ['message' => $message]);
+
+        // Save to notification table
+        $notificationModel = new \App\Models\UserNotificationModel();
+        $notificationModel->insert([
+            'user_id' => $dosen1['id_user'],
+            'message' => $message,
+            'status' => 'unread'
+        ]);
+        $notificationModel->insert([
+            'user_id' => $dosen2['id_user'],
+            'message' => $message,
+            'status' => 'unread'
+        ]);
+        $notificationModel->insert([
+            'user_id' => $mahasiswa['id_user'],
+            'message' => $message,
+            'status' => 'unread'
+        ]);
+
+        // Now return the result
         return [
             'message' => 'Data Persidangan Berhasil Ditambahkan.',
             'id_sidang' => $newSidangId,
@@ -164,35 +212,5 @@ class SidangService
             'room_id' => $selectedRoomId,
             'examiners' => [$examiner1, $examiner2]
         ];
-
-
-        // Kirim notifikasi ke dosen penguji
-        $pusherService = new PusherService();
-        $message = "Sidang mahasiswa dengan ID {$studentId} telah dijadwalkan pada {$selectedDate} pukul {$startTime} - {$endTime} di ruang {$room['nama_ruangan']}.";
-
-        // Kirim notifikasi ke channel dosen
-        $pusherService->sendNotification('dosen_' . $examiner1, 'new_sidang', ['message' => $message]);
-        $pusherService->sendNotification('dosen_' . $examiner2, 'new_sidang', ['message' => $message]);
-
-        // Kirim notifikasi ke mahasiswa
-        $pusherService->sendNotification('mahasiswa_' . $studentId, 'new_sidang', ['message' => $message]);
-
-        // Simpan ke dalam tabel notifikasi
-        $notificationModel = new \App\Models\UserNotificationModel();
-        $notificationModel->insert([
-            'user_id' => $examiner1,
-            'message' => $message,
-            'status' => 'unread'
-        ]);
-        $notificationModel->insert([
-            'user_id' => $examiner2,
-            'message' => $message,
-            'status' => 'unread'
-        ]);
-        $notificationModel->insert([
-            'user_id' => $studentId,
-            'message' => $message,
-            'status' => 'unread'
-        ]);
     }
 }
