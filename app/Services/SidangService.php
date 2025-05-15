@@ -6,6 +6,7 @@ use App\Models\SidangModel;
 use App\Models\DosenModel;
 use App\Models\DosenPengujiModel;
 use App\Models\RuanganModel;
+use App\Services\PusherService;
 use Exception;
 
 class SidangService
@@ -27,7 +28,7 @@ class SidangService
     {
         $existing = $this->sidangModel
             ->where('id_mhs', $studentId)
-            ->whereIn('status', ['DIJADWALKAN']) 
+            ->whereIn('status', ['DIJADWALKAN'])
             ->countAllResults();
 
         if ($existing > 0) {
@@ -163,5 +164,35 @@ class SidangService
             'room_id' => $selectedRoomId,
             'examiners' => [$examiner1, $examiner2]
         ];
+
+
+        // Kirim notifikasi ke dosen penguji
+        $pusherService = new PusherService();
+        $message = "Sidang mahasiswa dengan ID {$studentId} telah dijadwalkan pada {$selectedDate} pukul {$startTime} - {$endTime} di ruang {$room['nama_ruangan']}.";
+
+        // Kirim notifikasi ke channel dosen
+        $pusherService->sendNotification('dosen_' . $examiner1, 'new_sidang', ['message' => $message]);
+        $pusherService->sendNotification('dosen_' . $examiner2, 'new_sidang', ['message' => $message]);
+
+        // Kirim notifikasi ke mahasiswa
+        $pusherService->sendNotification('mahasiswa_' . $studentId, 'new_sidang', ['message' => $message]);
+
+        // Simpan ke dalam tabel notifikasi
+        $notificationModel = new \App\Models\UserNotificationModel();
+        $notificationModel->insert([
+            'user_id' => $examiner1,
+            'message' => $message,
+            'status' => 'unread'
+        ]);
+        $notificationModel->insert([
+            'user_id' => $examiner2,
+            'message' => $message,
+            'status' => 'unread'
+        ]);
+        $notificationModel->insert([
+            'user_id' => $studentId,
+            'message' => $message,
+            'status' => 'unread'
+        ]);
     }
 }
