@@ -58,7 +58,7 @@ Server akan berjalan di `http://localhost:8080/`
 
 <b>User<b>
 *  `GET` → `http://localhost:8080/user`
-*  `POST` → `http://localhost:8080/user`
+*  `GET by id` → `http://localhost:8080/user/{id}`
 *  `PUT` → `http://localhost:8080/user/{id}`
 *  `DELETE` → `http://localhost:8080/user/{id}`
 
