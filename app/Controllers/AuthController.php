@@ -13,6 +13,7 @@ class AuthController extends ResourceController
         helper('jwt_helper');
     }
 
+    // // Fungsi login, menerima username dan password dari JSON request
     public function login()
     {
         $json = $this->request->getJSON();
@@ -30,6 +31,7 @@ class AuthController extends ResourceController
             return $this->failUnauthorized('Password Salah!!');
         }
 
+        // Generate token JWT
         $token = generateJWT([
             'id_user' => $user['id_user'],
             'username' => $user['username'],
@@ -65,6 +67,7 @@ class AuthController extends ResourceController
         ], 200);
     }
 
+    // Fungsi mendapatkan profil user berdasarkan token JWT di header Authorization
     public function profile()
     {
         $authHeader = $this->request->getHeaderLine('Authorization');
@@ -87,6 +90,7 @@ class AuthController extends ResourceController
 
             $db = \Config\Database::connect();
 
+            // Query profil user berdasarkan role
             if ($role === 'mahasiswa') {
                 $builder = $db->table('mahasiswa');
                 $builder->select('mahasiswa.*, user.role, user.isAdmin');
@@ -117,6 +121,7 @@ class AuthController extends ResourceController
         }
     }
 
+    // register user
     public function register()
     {
         $json = $this->request->getJSON();

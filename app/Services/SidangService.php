@@ -27,6 +27,7 @@ class SidangService
 
     public function scheduleSidang(int $studentId): array
     {
+        // Mengecek apakah mahasiswa sudah memiliki sidang yang dijadwalkan
         $existing = $this->sidangModel
             ->where('id_mhs', $studentId)
             ->whereIn('status', ['DIJADWALKAN'])
@@ -36,9 +37,11 @@ class SidangService
             throw new Exception('Anda Sudah Terdaftar');
         }
 
+        // Mengambil data dosen
         $lecturers = $this->dosenModel->findAll();
         $lecturerLoad = [];
 
+        // Menghitung jumlah sidang setiap dosen
         foreach ($lecturers as $lecturer) {
             $count = $this->examinerModel->where('id_dosen', $lecturer['id_dosen'])->countAllResults();
             $lecturerLoad[] = [
@@ -47,21 +50,25 @@ class SidangService
             ];
         }
 
+        // Mengurutkan dosen berdasarkan jumlah sidang
         usort($lecturerLoad, fn($a, $b) => $a['count'] <=> $b['count']);
 
+        // Memilih dua dosen dengan jumlah sidang terkecil
         $examiner1 = $lecturerLoad[0]['id_dosen'] ?? null;
         $examiner2 = $lecturerLoad[1]['id_dosen'] ?? null;
 
+        // Memeriksa apakah dosen tersedia
         if (!$examiner1 || !$examiner2 || $examiner1 === $examiner2) {
             throw new Exception('Not enough available examiners.');
         }
 
+        // Menentukan waktu sidang
         $startDate = strtotime('2026-01-01');
         $endDate = strtotime('+2 months', $startDate);
         $rooms = $this->roomModel->findAll();
 
+        // Menghitung jumlah sidang setiap ruangan
         $roomUsage = [];
-
         foreach ($rooms as $room) {
             $count = $this->sidangModel
                 ->where('id_ruangan', $room['id_ruangan'])
@@ -75,7 +82,7 @@ class SidangService
 
         usort($roomUsage, fn($a, $b) => $a['count'] <=> $b['count']);
 
-
+        // Mencari waktu dan ruangan yang tersedia
         $selectedDate = null;
         $startTime = null;
         $endTime = null;
@@ -85,17 +92,20 @@ class SidangService
         while ($startDate <= $endDate) {
             $dayOfWeek = date('N', $startDate);
 
+            // Memilih hari kerja(Skip sabtu dan minggu)
             if ($dayOfWeek >= 6) {
                 $startDate = strtotime('+1 day', $startDate);
                 continue;
             }
 
+            // Memilih jam kerja
             for ($hour = 8; $hour < 16; $hour++) {
                 foreach ($roomUsage as $room) {
                     $date = date('Y-m-d', $startDate);
                     $start = sprintf('%02d:00:00', $hour);
                     $end = sprintf('%02d:00:00', $hour + 1);
 
+                    // Cek konflik waktu
                     $roomConflict = $this->sidangModel
                         ->where('tanggal_sidang', $date)
                         ->where('id_ruangan', $room['id_ruangan'])
@@ -105,6 +115,7 @@ class SidangService
                         ->groupEnd()
                         ->countAllResults();
 
+                    // Cek konflik dosen
                     $examinerConflict = $this->examinerModel
                         ->whereIn('id_dosen', [$examiner1, $examiner2])
                         ->join('sidang', 'sidang.id_sidang = dosen_penguji.id_sidang')
@@ -115,6 +126,7 @@ class SidangService
                         ->groupEnd()
                         ->countAllResults();
 
+                    // Memilih jadwal jika tidak ada konflik
                     if ($roomConflict === 0 && $examinerConflict === 0) {
                         $selectedDate = $date;
                         $startTime = $start;
@@ -133,6 +145,7 @@ class SidangService
             throw new Exception('No available schedule found.');
         }
 
+        // Insert sidang kedalam database
         $sidangData = [
             'id_mhs' => $studentId,
             'id_ruangan' => $selectedRoomId,
@@ -145,7 +158,7 @@ class SidangService
         $this->sidangModel->insert($sidangData);
         $newSidangId = $this->sidangModel->getInsertID();
 
-        // Step 4: Insert examiners
+        // Insert dosen penguji
         $this->examinerModel->insert([
             'id_sidang' => $newSidangId,
             'id_dosen' => $examiner1,
@@ -157,7 +170,7 @@ class SidangService
             'peran' => 'PENGUJI 2'
         ]);
 
-        // Get room name for notification
+        // Mengambil nama ruangan buat notif
         $roomName = '';
         foreach ($roomUsage as $r) {
             if ($r['id_ruangan'] == $selectedRoomId) {
@@ -166,7 +179,7 @@ class SidangService
             }
         }
 
-        // Send notifications BEFORE returning
+        // Mengambil nama mahasiswa buat notif
         $mahasiswaModel = new MahasiswaModel();
         $dosenModel = new DosenModel();
         
@@ -178,14 +191,14 @@ class SidangService
         $pusherService = new PusherService();
         $message = "Sidang mahasiswa dengan nama {$nama} telah dijadwalkan pada {$selectedDate} pukul {$startTime} - {$endTime} di ruang {$roomName}.";
 
-        // Send notification to lecturers
+        // Send notif ke dosen
         $pusherService->sendNotification('dosen_' . $dosen1['id_user'], 'new_sidang', ['message' => $message]);
         $pusherService->sendNotification('dosen_' . $dosen2['id_user'], 'new_sidang', ['message' => $message]);
 
-        // Send notification to student
+        // Send notif ke mahasiswa
         $pusherService->sendNotification('mahasiswa_' . $mahasiswa['id_user'], 'new_sidang', ['message' => $message]);
 
-        // Save to notification table
+        // Menyimpan notifikasi ke tabel
         $notificationModel = new \App\Models\UserNotificationModel();
         $notificationModel->insert([
             'user_id' => $dosen1['id_user'],
@@ -203,7 +216,7 @@ class SidangService
             'status' => 'unread'
         ]);
 
-        // Now return the result
+        // mengembalikan response
         return [
             'message' => 'Data Persidangan Berhasil Ditambahkan.',
             'id_sidang' => $newSidangId,

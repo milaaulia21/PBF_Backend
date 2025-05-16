@@ -14,8 +14,9 @@ class ProfileController extends ResourceController
         $token = explode(' ', $authHeader)[1];
         $decoded = \Firebase\JWT\JWT::decode($token, new \Firebase\JWT\Key(getenv('JWT_SECRET'), 'HS256'));
         $userId = $decoded->id_user;
-        $role = $decoded->role;
 
+        // Mengambil role (mahasiswa atau dosen) dari hasil decode token
+        $role = $decoded->role;
         if ($role === 'mahasiswa') {
             $model = new MahasiswaModel();
             $profile = $model->where('id_user', $userId)->first();
@@ -24,6 +25,8 @@ class ProfileController extends ResourceController
             $profile = $model->where('id_user', $userId)->first();
         }
 
+        
+        // Mengembalikan response JSON berisi id_user, role, dan data profil
         return $this->respond([
             'id_user' => $userId,
             'role' => $role,

@@ -24,6 +24,7 @@ class PusherService
         );
     }
 
+    // Fungsi untuk mengirim notifikasi
     public function sendNotification($channel, $event, $data)
     {
         $this->pusher->trigger($channel, $event, $data);

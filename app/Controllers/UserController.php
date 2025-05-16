@@ -17,14 +17,12 @@ class UserController extends BaseController
         $this->userModel = new UserModel();
     }
 
-    // GET /users
     public function index()
     {
         $users = $this->userModel->findAll();
         return $this->respond($users);
     }
-
-    // GET /users/{id}
+    
     public function show($id = null)
     {
         $user = $this->userModel->find($id);
@@ -36,7 +34,6 @@ class UserController extends BaseController
         return $this->respond($user);
     }
 
-    // DELETE /users/{id}
     public function delete($id = null)
     {
         $user = $this->userModel->find($id);
@@ -52,7 +49,6 @@ class UserController extends BaseController
         }
     }
 
-    // PUT /users/{id}/isAdmin
     public function updateIsAdmin($id = null)
     {
         $json = $this->request->getJSON();
